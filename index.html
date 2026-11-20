@@ -3,7 +3,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#1b1326"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="color-scheme" content="dark">
-<title>Patrol</title>
+<title>Patrol — 3D Aerial Combat</title>
+<meta name="description" content="Patrol is a fast-paced browser-based 3D aerial combat game. Pilot your aircraft, battle enemy fighters and ground defences, survive escalating waves, collect credits and upgrade your arsenal. Play on desktop with mouse and keyboard, on mobile with touch controls, or with a gamepad.">
+<meta name="application-name" content="Patrol">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
@@ -27,7 +29,7 @@ body.ready .hints,body.ready .chip{opacity:1}
 .chip{position:fixed;top:calc(16px + env(safe-area-inset-top));right:16px;font:500 11.5px/1 var(--body);letter-spacing:.09em;text-transform:uppercase;color:var(--cream);background:#1b1326cc;border:0;padding:.75em 1em;cursor:pointer;opacity:0;transition:opacity .6s ease .3s}
 .chip[aria-pressed=true]{background:var(--gold);color:var(--ink)}
 button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
-#touch{display:block}
+#touch{display:none}
 .pad{--h:clamp(54px,13vw,84px);position:fixed;bottom:calc(14px + env(safe-area-inset-bottom));--w:clamp(70px,18vw,120px);width:var(--w);height:var(--h);display:grid;place-content:center;gap:.6em;text-align:center;font:500 clamp(11px,2.6vw,15px)/1 var(--body);letter-spacing:.22em;text-transform:uppercase;color:#eaf2ff;background:#16322e8c;border:1px solid #ffffff3a;border-radius:10px;touch-action:none;cursor:pointer;padding:0}
 .pad.on{background:#e4502e99}.pad small{font-size:inherit;letter-spacing:.1em}
 #tB,#tF{right:16px}#tF{bottom:calc(var(--h) + 24px + env(safe-area-inset-bottom))}#tG,#tR{right:calc(var(--w) + 26px)}#tR{bottom:calc(var(--h) + 24px + env(safe-area-inset-bottom))}#tG{background:#183a6a99}
@@ -47,7 +49,7 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 #hp em.on{background:#ff6a4a}
 #flash{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 140px 40px #e4502e;opacity:0;transition:opacity .4s}#flash.on{opacity:.9;transition:none}
 #alert{position:fixed;left:0;right:0;top:22%;text-align:center;pointer-events:none;font:700 clamp(18px,4vw,34px)/1 var(--display);letter-spacing:.06em;text-transform:uppercase;text-shadow:0 3px 0 var(--ember),0 6px 0 var(--ink);opacity:0;transition:opacity .35s}#alert.on{opacity:1}
-@media (pointer:coarse){.hints{display:none}.chip2{top:calc(16px + env(safe-area-inset-top))}#joy{display:block}}
+@media (pointer:coarse){#touch{display:block}.hints{display:none}.chip2{top:calc(16px + env(safe-area-inset-top))}#joy{display:block}}
 @media (prefers-reduced-motion:reduce){canvas,#title,.hints,.chip,#boot{transition:none}}
 
 /* ===== landscape, notches and small screens ===== */
@@ -74,7 +76,7 @@ body.gp .pad,body.gp #joy{opacity:.28}
 <canvas id="gl"></canvas><canvas id="ui"></canvas>
 <header id="title"><h1>Patrol</h1><p><span id="msg">Spooling up the engines</span></p></header>
 <div id="boot"><div id="bar"><i id="fill"></i></div></div>
-<nav class="hints corner" aria-label="Controls"><span class="hint"><b>Mouse</b>steer</span><span class="hint"><b>Click</b>loop</span><span class="hint"><b>Hold</b>afterburner</span><span class="hint"><b>Right click</b>missile</span><span class="hint"><b>G</b>gun</span><span class="hint"><b>T</b>tank</span><span class="hint"><b>X</b>180</span><span class="hint"><b>C</b>flare</span><span class="hint"><b>Space</b>view</span></nav>
+<nav class="hints corner" aria-label="Controls"><span class="hint"><b>Mouse</b>steer</span><span class="hint"><b>Left click</b>loop</span><span class="hint"><b>Hold left</b>boost</span><span class="hint"><b>Right click / F</b>missile</span><span class="hint"><b>G</b>hold gun</span><span class="hint"><b>Shift</b>boost</span><span class="hint"><b>R</b>loop</span><span class="hint"><b>T</b>tank</span><span class="hint"><b>X</b>180°</span><span class="hint"><b>C</b>flare</span><span class="hint"><b>Space</b>view</span></nav>
 <div id="sys"><button type="button" id="fs" class="chip corner" aria-pressed="false">Full screen</button><button type="button" id="snd" class="chip corner" aria-pressed="false">Sound: off</button></div>
 <div id="stat" class="chip2"><span>Hull</span><span class="pips" id="hp"></span><span>Boost</span><span class="bar" id="bb"><i></i></span><span class="row">Wave <b id="wv">0</b> · Score <b id="sc">0</b> <b id="mu"></b></span><span class="row r2">Kills <b id="ks">0</b> · Best <b id="bs">0</b></span></div><div id="wrn">Missile warning</div><div id="boss"><i></i></div><div id="msn"></div><div id="shop"><h2>Upgrades</h2><p>Credits <b id="cr">0</b> · next wave in <b id="nw">12</b>s</p><div id="uplist"></div><button id="go">Launch now</button></div><div id="modebar"><button id="dm">Free play</button></div><div id="flash"></div><div id="alert"></div>
 <div id="rot"><div><p>Rotate your device to landscape</p><button id="rotok">Play anyway</button></div></div>
