@@ -51,6 +51,11 @@ button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 #alert{position:fixed;left:0;right:0;top:22%;text-align:center;pointer-events:none;font:700 clamp(18px,4vw,34px)/1 var(--display);letter-spacing:.06em;text-transform:uppercase;text-shadow:0 3px 0 var(--ember),0 6px 0 var(--ink);opacity:0;transition:opacity .35s}#alert.on{opacity:1}
 @media (pointer:coarse){#touch{display:block}.hints{display:none}.chip2{top:calc(16px + env(safe-area-inset-top))}#joy{display:block}}
 @media (prefers-reduced-motion:reduce){canvas,#title,.hints,.chip,#boot{transition:none}}
+/* TV / directional remote support */
+#tvhelp{display:none;position:fixed;z-index:8;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(92vw,680px);padding:12px 16px;background:#111827eF;border:1px solid #ffd884;color:#fff3dc;font:500 clamp(10px,1.35vw,14px)/1.5 var(--body);letter-spacing:.04em;text-align:center;pointer-events:none;text-transform:uppercase}
+#tvhelp.on{display:block}#tvhelp b{color:#ffd884}#tvhelp strong{color:#9fe6e0}
+body.tvremote .hints{display:none}
+
 
 /* ===== landscape, notches and small screens ===== */
 :root{--sl:env(safe-area-inset-left,0px);--sr:env(safe-area-inset-right,0px);--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);--ph:clamp(44px,13vh,76px);--pw:clamp(64px,19vh,112px);--joy:clamp(104px,34vh,156px);--bh:clamp(32px,9vh,40px)}
@@ -79,7 +84,7 @@ body.gp .pad,body.gp #joy{opacity:.28}
 <nav class="hints corner" aria-label="Controls"><span class="hint"><b>Mouse</b>steer</span><span class="hint"><b>Left click</b>loop</span><span class="hint"><b>Hold left</b>boost</span><span class="hint"><b>Right click / F</b>missile</span><span class="hint"><b>G</b>hold gun</span><span class="hint"><b>Shift</b>boost</span><span class="hint"><b>R</b>loop</span><span class="hint"><b>T</b>tank</span><span class="hint"><b>X</b>180°</span><span class="hint"><b>C</b>flare</span><span class="hint"><b>Space</b>view</span></nav>
 <div id="sys"><button type="button" id="fs" class="chip corner" aria-pressed="false">Full screen</button><button type="button" id="snd" class="chip corner" aria-pressed="false">Sound: off</button></div>
 <div id="stat" class="chip2"><span>Hull</span><span class="pips" id="hp"></span><span>Boost</span><span class="bar" id="bb"><i></i></span><span class="row">Wave <b id="wv">0</b> · Score <b id="sc">0</b> <b id="mu"></b></span><span class="row r2">Kills <b id="ks">0</b> · Best <b id="bs">0</b></span></div><div id="wrn">Missile warning</div><div id="boss"><i></i></div><div id="msn"></div><div id="shop"><h2>Upgrades</h2><p>Credits <b id="cr">0</b> · next wave in <b id="nw">12</b>s</p><div id="uplist"></div><button id="go">Launch now</button></div><div id="modebar"><button id="dm">Free play</button></div><div id="flash"></div><div id="alert"></div>
-<div id="rot"><div><p>Rotate your device to landscape</p><button id="rotok">Play anyway</button></div></div>
+<div id="rot"><div><p>Rotate your device to landscape</p><button id="rotok">Play anyway</button></div></div><div id="tvhelp" role="status" aria-live="polite"><b>TV REMOTE</b> · <strong>ARROWS</strong> steer · <strong>OK / ENTER</strong> guns · <strong>BACK</strong> loop · <strong>PLAY/PAUSE</strong> boost · <strong>SPACE</strong> missile · <strong>RED</strong> flare · <strong>GREEN</strong> tank · <strong>YELLOW</strong> 180° · <strong>BLUE</strong> view</div>
 <div id="touch"><div id="joy"><i id="knob"></i></div><button id="tC" class="pad">Flare<small id="fl">4</small></button><button id="tR" class="pad">Loop</button><button id="tV" class="pad">View</button><button id="tG" class="pad">Gun<small id="gn">300</small></button><button id="tF" class="pad">Missile<span class="pips" id="ms"></span></button><button id="tB" class="pad">Boost</button><button id="tT" class="pad">Tank</button><button id="tU" class="pad">180</button></div>
 <script>
 'use strict';
@@ -227,8 +232,29 @@ addEventListener('mousemove',steer);addEventListener('pointerdown',e=>{document.
 addEventListener('mousedown',e=>{steer(e);if(e.button===0){held=true;downT=tt}if(e.button===2)fire()});
 addEventListener('mouseup',e=>{if(e.button===0){if(tt-downT<.2&&moved)roll();held=false}});
 addEventListener('contextmenu',e=>e.preventDefault());
-addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();if(!e.repeat)tv=(tv+1)%3}if(e.code==='KeyF'&&!e.repeat)fire();if(e.code==='KeyR'&&!e.repeat)roll();if(e.code==='ShiftLeft')btnAB=true;if(e.code==='KeyG')gunOn=true;if(e.code==='KeyT'&&!e.repeat)morph();if(e.code==='KeyX'&&!e.repeat)uturn();if(e.code==='KeyC'&&!e.repeat)flare();if(!inWave&&wave>0&&/^Digit[1-4]$/.test(e.code))buy(+e.code[5]-1)});
-addEventListener('keyup',e=>{if(e.code==='ShiftLeft')btnAB=false;if(e.code==='KeyG')gunOn=false});
+// TV remotes usually expose their D-pad and media/colour keys as keyboard events.
+let tvRemote=false;
+const tvDpad={ArrowLeft:false,ArrowRight:false,ArrowUp:false,ArrowDown:false};
+function activateTVRemote(){if(!tvRemote){tvRemote=true;document.body.classList.add('tvremote');$('tvhelp').classList.add('on');alertMsg('TV remote controls ready')}startPlay()}
+addEventListener('keydown',e=>{
+ if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.code)){activateTVRemote();tvDpad[e.code]=true;e.preventDefault();return}
+ if(e.code==='Enter'||e.code==='NumpadEnter'){activateTVRemote();gunOn=true;e.preventDefault();return}
+ if(e.code==='Space'&&tvRemote){e.preventDefault();if(!e.repeat)fire();return}
+ if((e.code==='Escape'||e.code==='Backspace'||e.key==='BrowserBack'||e.key==='GoBack')&&tvRemote){e.preventDefault();if(!e.repeat)roll();return}
+ if((e.code==='MediaPlayPause'||e.code==='MediaPlay')&&tvRemote){e.preventDefault();btnAB=true;return}
+ if(e.code==='ColorF1'&&tvRemote){e.preventDefault();if(!e.repeat)flare();return}
+ if(e.code==='ColorF2'&&tvRemote){e.preventDefault();if(!e.repeat)morph();return}
+ if(e.code==='ColorF3'&&tvRemote){e.preventDefault();if(!e.repeat)uturn();return}
+ if(e.code==='ColorF4'&&tvRemote){e.preventDefault();if(!e.repeat)tv=(tv+1)%3;return}
+ if(e.code==='Space'){e.preventDefault();if(!e.repeat)tv=(tv+1)%3}
+ if(e.code==='KeyF'&&!e.repeat)fire();if(e.code==='KeyR'&&!e.repeat)roll();if(e.code==='ShiftLeft')btnAB=true;if(e.code==='KeyG')gunOn=true;if(e.code==='KeyT'&&!e.repeat)morph();if(e.code==='KeyX'&&!e.repeat)uturn();if(e.code==='KeyC'&&!e.repeat)flare();if(!inWave&&wave>0&&/^Digit[1-4]$/.test(e.code))buy(+e.code[5]-1)
+});
+addEventListener('keyup',e=>{
+ if(e.code in tvDpad)tvDpad[e.code]=false;
+ if(e.code==='Enter'||e.code==='NumpadEnter')gunOn=false;
+ if(e.code==='MediaPlayPause'||e.code==='MediaPlay')btnAB=false;
+ if(e.code==='ShiftLeft')btnAB=false;if(e.code==='KeyG')gunOn=false
+});
 const tb=(id,dn,up=()=>{})=>{const b=$(id);for(const t of['mousedown','mouseup','click'])b.addEventListener(t,e=>e.stopPropagation());b.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();moved||(moved=true,$('title').classList.add('off'),$('modebar').classList.add('off'));dn();b.classList.add('on')});for(const t of['pointerup','pointerleave','pointercancel'])b.addEventListener(t,()=>{up();b.classList.remove('on')})};
 const joy=$('joy'),kn=$('knob');let jid=null;
 const jm=e=>{const r=joy.getBoundingClientRect(),H2=r.width/2;let dx=(e.clientX-r.left-H2)/H2,dy=(e.clientY-r.top-H2)/H2;const m=Math.hypot(dx,dy);if(m>1){dx/=m;dy/=m}mx=dx;my=dy;kn.style.transform='translate('+dx*H2*.62+'px,'+dy*H2*.62+'px)'};
@@ -591,7 +617,7 @@ async function goFull(){try{const el=document.documentElement;if(!document.fulls
 
 // ---------- loop ----------
 let last=performance.now(),ema=16,slow=0,msS='';
-function frame(ms){requestAnimationFrame(frame);const raw=ms-last,dt=Math.min(.05,raw/1000);last=ms;tt+=dt;if(!READY)return;pollPad();const want=(tv===2?300:240)-qd;if(want!==Q){Q=want;resize()}
+function frame(ms){requestAnimationFrame(frame);const raw=ms-last,dt=Math.min(.05,raw/1000);last=ms;tt+=dt;if(!READY)return;pollPad();if(tvRemote){mx=(tvDpad.ArrowRight?1:0)-(tvDpad.ArrowLeft?1:0);my=(tvDpad.ArrowDown?1:0)-(tvDpad.ArrowUp?1:0)}const want=(tv===2?300:240)-qd;if(want!==Q){Q=want;resize()}
  step(dt);cams();render();overlay();
  const s=rails.map(r=>'<em'+(r<=0?' class="on"':'')+'></em>').join('');if(s!==msS){msS=s;$('ms').innerHTML=s}const hs=J.hp+'/'+kills+'/'+maxhp;if(hs!==hpS){hpS=hs;$('hp').innerHTML=Array.from({length:10},(_,i)=>'<em'+(i<Math.ceil(J.hp/maxhp*10)?' class="on"':'')+'></em>').join('');$('ks').textContent=kills}const st=wave+'|'+score+'|'+combo+'|'+best+'|'+Math.round(bst)+'|'+ovh+'|'+flares+'|'+Math.ceil(loopCD)+'|'+J.mode;if(st!==stS){stS=st;$('wv').textContent=wave;$('sc').textContent=score;$('mu').textContent=combo>=3?'x'+mult():'';$('bs').textContent=best;const bb=$('bb');bb.firstChild.style.width=bst+'%';bb.classList.toggle('hot',ovh);$('fl').textContent=flares;$('tR').textContent=loopCD>0?Math.ceil(loopCD)+'s':(J.mode?'Hop':'Loop');$('tR').classList.toggle('cd',loopCD>0);$('tC').classList.toggle('cd',flares<=0)}$('wrn').classList.toggle('on',EM.length>0);{const bo=EN.find(e=>e.boss)||GE.find(g=>g.boss);$('boss').classList.toggle('on',!!bo);if(bo)$('boss').firstChild.style.width=Math.max(0,bo.hp/bo.maxhp*100)+'%'}const g=(gunLock?'LOCK ':'')+Math.ceil(ammo);if(g!==gnS){gnS=g;$('gn').textContent=g}
  ema=lerp(ema,raw,.05);if(ema>26&&qd<60){if(++slow>60){qd+=20;slow=0;ema=16}}else slow=0}
