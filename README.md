@@ -35,6 +35,24 @@ The game selects its control layout from the input device reported by the browse
 
 Touch-capable devices with a coarse pointer get an on-screen joystick and touch buttons. Drag the joystick to steer; use the labelled buttons for boost, missiles, guns, loop, flare, view, tank mode and the 180-degree turn. Rotate to landscape for the recommended layout. Safe-area spacing is included for devices with notches and home indicators.
 
+### Smart TV remote
+
+On supported Smart TV browsers, the game also accepts remote-control keys exposed as keyboard events. Press a directional button once to activate TV-remote mode and show the on-screen guide.
+
+| Remote button / key | Action |
+|---|---|
+| Directional pad | Steer (hold for continuous steering) |
+| OK / Enter (hold) | Fire guns |
+| Back / Escape | Loop |
+| Play/Pause (hold) | Boost |
+| Space | Fire missile |
+| Red colour key | Deploy flare |
+| Green colour key | Toggle tank mode |
+| Yellow colour key | 180-degree turn |
+| Blue colour key | Change camera view |
+
+**Compatibility:** Smart TV browsers differ. This works when the TV browser sends standard keyboard events such as Arrow keys, Enter, Escape, Space, MediaPlayPause or ColorF1–ColorF4. Some remotes or TV platforms do not expose every button to web pages; on those devices, use a Bluetooth/USB gamepad or keyboard if available.
+
 ### Gamepad
 
 A connected browser gamepad is detected automatically. The left stick steers; face, shoulder and menu buttons provide the game actions. The on-screen touch controls are visually de-emphasised while a gamepad is active.
